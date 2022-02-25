@@ -76,6 +76,7 @@
 
 #define TIME_LEDS_DEFAULT 50   // tempo de piscar padrão (50ms)
 #define TIME_LEDS_PRESSED 500  // tempo de piscar ao pressionar botão
+#define TIMES_FLASHING    5    // numero de vezes para piscar
 
 /************************************************************************/
 /* variaveis globais                                                    */
@@ -86,10 +87,7 @@
 /************************************************************************/
 
 void init(void);
-void pisca(void);
-void pisca1(void);
-void pisca2(void);
-void pisca3(void);
+void piscar(Pio* pio, uint32_t ul_mask, int interval_time);
 
 /************************************************************************/
 /* interrupcoes                                                         */
@@ -99,32 +97,11 @@ void pisca3(void);
 /* funcoes                                                              */
 /************************************************************************/
 
-void pisca(void) {
-	pio_set(PIOC, LED_PIO_IDX_MASK);
-	delay_ms(TIME_LEDS_PRESSED);
-	pio_clear(PIOC, LED_PIO_IDX_MASK);
-	delay_ms(TIME_LEDS_PRESSED);
-}
-
-void pisca1(void) {
-	pio_clear(PIOA, LED1_PIO_ID_MASK);
-	delay_ms(TIME_LEDS_PRESSED);
-	pio_set(PIOA, LED1_PIO_ID_MASK);
-	delay_ms(TIME_LEDS_PRESSED);
-}
-
-void pisca2(void) {
-	pio_clear(PIOC, LED2_PIO_ID_MASK);
-	delay_ms(TIME_LEDS_PRESSED);
-	pio_set(PIOC, LED2_PIO_ID_MASK);
-	delay_ms(TIME_LEDS_PRESSED);
-}
-
-void pisca3(void) {
-	pio_clear(PIOB, LED3_PIO_ID_MASK);
-	delay_ms(TIME_LEDS_PRESSED);
-	pio_set(PIOB, LED3_PIO_ID_MASK);
-	delay_ms(TIME_LEDS_PRESSED);
+void piscar(Pio* pio, uint32_t ul_mask, int interval_time) {
+	pio_clear(pio, ul_mask);
+	delay_ms(interval_time);
+	pio_set(pio, ul_mask);
+	delay_ms(interval_time);
 }
 
 // Função de inicialização do uC
@@ -175,58 +152,37 @@ int main(void)
   // aplicacoes embarcadas não devem sair do while(1).
   while (1)
   {
-	  // liga led1 da placa OLED
-	  pio_clear(PIOA, LED1_PIO_ID_MASK);
-	  delay_ms(TIME_LEDS_DEFAULT);
-	  pio_set(PIOA, LED1_PIO_ID_MASK);
-	  delay_ms(TIME_LEDS_DEFAULT);
-
-	  // liga led2 da placa OLED
-	  pio_clear(PIOC, LED2_PIO_ID_MASK);
-	  delay_ms(TIME_LEDS_DEFAULT);
-	  pio_set(PIOC, LED2_PIO_ID_MASK);
-	  delay_ms(TIME_LEDS_DEFAULT);
-	  
-	  // liga led3 da placa OLED
-	  pio_clear(PIOB, LED3_PIO_ID_MASK);
-	  delay_ms(TIME_LEDS_DEFAULT);
-	  pio_set(PIOB, LED3_PIO_ID_MASK);
-	  delay_ms(TIME_LEDS_DEFAULT);
+	  piscar(LED1_PIO, LED1_PIO_ID_MASK, TIME_LEDS_DEFAULT);
+	  piscar(LED2_PIO, LED2_PIO_ID_MASK, TIME_LEDS_DEFAULT);
+	  piscar(LED3_PIO, LED3_PIO_ID_MASK, TIME_LEDS_DEFAULT);
+	  piscar(LED_PIO, LED_PIO_IDX_MASK, TIME_LEDS_DEFAULT);
 	  
 	  if (!pio_get(BUT_PIO, PIO_INPUT, BUT_PIO_ID_MASK)) {
-		  for (int i = 0; i < 3; i++) {
-			  pisca();
+		  for (int i = 0; i < TIMES_FLASHING; i++) {
+			  piscar(LED_PIO, LED_PIO_IDX_MASK, TIME_LEDS_PRESSED);
 		  }
 	  }
 	  
 	  if (!pio_get(BUT1_PIO, PIO_INPUT, BUT1_PIO_IDX_MASK)) {
 		  // LED 1 pisca mais lento quando o botao 1 e pressionado
-		  for (int i = 0; i < 3; i++) {
-			  pisca1();
+		  for (int i = 0; i < TIMES_FLASHING; i++) {
+			  piscar(LED1_PIO, LED1_PIO_ID_MASK, TIME_LEDS_PRESSED);
 		  }
 	  }
 	  
 	  if (!pio_get(BUT2_PIO, PIO_INPUT, BUT2_PIO_IDX_MASK)) {
 		  // LED 2 pisca mais lento quando o botao 2 e pressionado
-		  for (int i = 0; i < 3; i++) {
-			  pisca2();
+		  for (int i = 0; i < TIMES_FLASHING; i++) {
+			  piscar(LED2_PIO, LED2_PIO_ID_MASK, TIME_LEDS_PRESSED);
 		  }
 	  }
 	  	  
 	  if (!pio_get(BUT3_PIO, PIO_INPUT, BUT3_PIO_IDX_MASK)) {
 		  // LED 3 pisca mais lento quando o botao 3 e pressionado
-		  for (int i = 0; i < 3; i++) {
-			  pisca3();
+		  for (int i = 0; i < TIMES_FLASHING; i++) {
+			  piscar(LED3_PIO, LED3_PIO_ID_MASK, TIME_LEDS_PRESSED);
 		  }
 	  }
-	  
-	  // coloca 0 no pino do LED
-	  pio_clear(PIOC, LED_PIO_IDX_MASK);
-	  delay_ms(TIME_LEDS_DEFAULT);
-	  
-	  // coloca 1 no pino do LED
-	  pio_set(PIOC, LED_PIO_IDX_MASK);
-	  delay_ms(TIME_LEDS_DEFAULT);
   }
   return 0;
 }
