@@ -83,6 +83,7 @@
 #define TIME_LEDS_DEFAULT 50   // tempo de piscar padrão (50ms)
 #define TIME_LEDS_PRESSED 500  // tempo de piscar ao pressionar botão
 #define TIMES_FLASHING    5    // numero de vezes para piscar
+#define DELAY_FACTOR      160000
 
 /************************************************************************/
 /* variaveis globais                                                    */
@@ -99,6 +100,8 @@ void _pio_clear(Pio *p_pio, const uint32_t ul_mask);
 void _pio_pull_up(Pio *p_pio, const uint32_t ul_mask, const uint32_t ul_pull_up_enable);
 void _pio_set_input(Pio *p_pio, const uint32_t ul_mask, const uint32_t ul_attribute);
 void _pio_set_output(Pio *p_pio, const uint32_t ul_mask, const uint32_t ul_default_level, const uint32_t ul_multidrive_enable, const uint32_t ul_pull_up_enable);
+int _pio_get(Pio *p_pio, const pio_type_t ul_type, const uint32_t ul_mask);
+void _delay_ms(int delay_time);
 
 /************************************************************************/
 /* interruptions                                                         */
@@ -110,9 +113,9 @@ void _pio_set_output(Pio *p_pio, const uint32_t ul_mask, const uint32_t ul_defau
 
 void piscar(Pio* pio, uint32_t ul_mask, int interval_time) {
 	_pio_clear(pio, ul_mask);
-	delay_ms(interval_time);
+	_delay_ms(interval_time);
 	_pio_set(pio, ul_mask);
-	delay_ms(interval_time);
+	_delay_ms(interval_time);
 }
 
 /**
@@ -208,14 +211,52 @@ void _pio_set_output(Pio *p_pio, const uint32_t ul_mask, const uint32_t ul_defau
 	p_pio -> PIO_OER = ul_mask;
 	
 	// Configura saída inicial do pino
-	_pio_set(p_pio, ul_mask & ul_default_level);
+	if (ul_default_level){
+		_pio_set(p_pio, ul_mask);
+	} else{
+		_pio_clear(p_pio, ul_mask);
+	}
 	
 	// Configura multidrive dos pinos
-	p_pio -> PIO_MDER = ul_mask & ul_multidrive_enable;
+	if (ul_multidrive_enable){
+		p_pio -> PIO_MDER = ul_mask;
+	} else {
+		p_pio -> PIO_MDDR = ul_mask;
+	}
 	
-	// Ativa pull-up para o(s) pino(s) selecionado(s)
-	if (ul_pull_up_enable) {
-		_pio_pull_up(p_pio, ul_mask, ul_pull_up_enable);
+	// Configura o pull-up
+	_pio_pull_up(p_pio, ul_mask, ul_pull_up_enable);
+}
+
+
+/**
+ * \brief Return 1 if one or more PIOs of the given Pin instance currently have
+ * a high level; otherwise returns 0. This method returns the actual value that
+ * is being read on the pin. To return the supposed output value of a pin, use
+ * pio_get_output_data_status() instead.
+ * 
+ * \param p_pio Pointer to a PIO instance.
+ * \param ul_type PIO type.
+ * \param ul_mask Bit mask for one or more pin(s) to configure.
+ * 
+ * \retval 1 at least one PIO currently has a high level.
+ * \retval 0 all PIOs have a low level.
+ */
+int _pio_get(Pio *p_pio, const pio_type_t ul_type, const uint32_t ul_mask) {
+	if (ul_type == PIO_OUTPUT_0) {
+		return (p_pio->PIO_ODSR & ul_mask);
+	}
+	else if (ul_type == PIO_INPUT) {
+		return (p_pio->PIO_PDSR & ul_mask);
+	}
+	else {
+		return 0;
+	}
+}
+
+void _delay_ms(int delay_time) {
+	for (int i = 0; i < delay_time*DELAY_FACTOR; i++) {
+		asm("nop");
 	}
 }
 
@@ -272,27 +313,27 @@ int main(void)
 	  piscar(LED3_PIO, LED3_PIO_ID_MASK, TIME_LEDS_DEFAULT);
 	  piscar(LED_PIO, LED_PIO_IDX_MASK, TIME_LEDS_DEFAULT);
 	  
-	  if (!pio_get(BUT_PIO, PIO_INPUT, BUT_PIO_ID_MASK)) {
+	  if (!_pio_get(BUT_PIO, PIO_INPUT, BUT_PIO_ID_MASK)) {
 		  for (int i = 0; i < TIMES_FLASHING; i++) {
 			  piscar(LED_PIO, LED_PIO_IDX_MASK, TIME_LEDS_PRESSED);
 		  }
 	  }
 	  
-	  if (!pio_get(BUT1_PIO, PIO_INPUT, BUT1_PIO_IDX_MASK)) {
+	  if (!_pio_get(BUT1_PIO, PIO_INPUT, BUT1_PIO_IDX_MASK)) {
 		  // LED 1 pisca mais lento quando o botao 1 e pressionado
 		  for (int i = 0; i < TIMES_FLASHING; i++) {
 			  piscar(LED1_PIO, LED1_PIO_ID_MASK, TIME_LEDS_PRESSED);
 		  }
 	  }
 	  
-	  if (!pio_get(BUT2_PIO, PIO_INPUT, BUT2_PIO_IDX_MASK)) {
+	  if (!_pio_get(BUT2_PIO, PIO_INPUT, BUT2_PIO_IDX_MASK)) {
 		  // LED 2 pisca mais lento quando o botao 2 e pressionado
 		  for (int i = 0; i < TIMES_FLASHING; i++) {
 			  piscar(LED2_PIO, LED2_PIO_ID_MASK, TIME_LEDS_PRESSED);
 		  }
 	  }
 	  	  
-	  if (!pio_get(BUT3_PIO, PIO_INPUT, BUT3_PIO_IDX_MASK)) {
+	  if (!_pio_get(BUT3_PIO, PIO_INPUT, BUT3_PIO_IDX_MASK)) {
 		  // LED 3 pisca mais lento quando o botao 3 e pressionado
 		  for (int i = 0; i < TIMES_FLASHING; i++) {
 			  piscar(LED3_PIO, LED3_PIO_ID_MASK, TIME_LEDS_PRESSED);
