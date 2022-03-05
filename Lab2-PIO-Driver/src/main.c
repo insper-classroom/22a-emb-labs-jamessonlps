@@ -176,17 +176,22 @@ void _pio_pull_up(Pio *p_pio, const uint32_t ul_mask, const uint32_t ul_pull_up_
  * \return void
  */
 void _pio_set_input(Pio *p_pio, const uint32_t ul_mask, const uint32_t ul_attribute) {
-	// Qual a diferença entre configurar PIO_ODR e PIO_CODR ??
-	p_pio -> PIO_CODR = ul_mask;
+	p_pio -> PIO_PER = ul_mask;
+	p_pio -> PIO_ODR = ul_mask;
+	_pio_pull_up(p_pio, ul_mask, (ul_attribute & _PIO_PULLUP));
 	
-	// Ativa pull_up para o(s) pino(s) solicitado(s)
-	if (ul_attribute & (1u << 0)) {
-		_pio_pull_up(p_pio, ul_mask, ul_attribute);
-	}
-
-	// Ativa debounce para o(s) pino(s) solicitado(s)
-	if (ul_attribute & (1u << 3)) {
+	// Ativa o deglitch
+	if (ul_attribute & PIO_DEGLITCH) {
+		p_pio -> PIO_IFSCDR = ul_mask;
+	// Ativa o debounce
+	} else if (ul_attribute & PIO_DEBOUNCE) {
 		p_pio -> PIO_IFSCER = ul_mask;
+	}
+	
+	if (ul_attribute & (_PIO_DEBOUNCE | _PIO_DEGLITCH)){
+		p_pio -> PIO_IFER = ul_mask;
+	} else {
+		p_pio -> PIO_IFDR = ul_mask;
 	}
 }
 
