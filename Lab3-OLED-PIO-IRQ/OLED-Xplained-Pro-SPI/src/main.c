@@ -61,18 +61,29 @@ void but3_callback(void) {
 }
 
 
-void pisca_led1(int n, int t) {
-	double dt = (double)n / t;
-	int time_pisca = dt * 1000; // delay em ms
+/**
+ * \brief Função responsável por piscar o LED na frequência pedida
+ * e atualizar a barra de progresso no display
+ * 
+ * \param n Número de vezes que o LED piscará
+ * \param f Frequência que o LED piscará
+ * 
+ * \return void
+ */
+void pisca_led1(int n, int f) {
+	// Calcula variáveis de tempo e frequência (em Hz)
+	double time_pisca_s = (double)n / f;
+	int time_pisca_ms = time_pisca_s*1000;
 	display_oled(freq);
+	// Inicializa barra de progresso
 	gfx_mono_draw_horizontal_line(0, 10, 4*(n-1), GFX_PIXEL_SET);
 	for (int i = 0; i < n; i++) {
-		pio_clear(LED1_PIO, LED1_PIO_ID_MASK);
-		delay_ms(time_pisca);
-		pio_set(LED1_PIO, LED1_PIO_ID_MASK);
-		delay_ms(time_pisca);
-		// Desenha barra de progresso
+		// Atualiza barra de progresso
 		gfx_mono_draw_horizontal_line(0, 10, 4*i, GFX_PIXEL_CLR);
+		pio_clear(LED1_PIO, LED1_PIO_ID_MASK);
+		delay_ms(time_pisca_ms);
+		pio_set(LED1_PIO, LED1_PIO_ID_MASK);
+		delay_ms(time_pisca_ms);
 		if (but2_flag) {
 			pio_set(LED1_PIO, LED1_PIO_ID_MASK);
 			gfx_mono_draw_horizontal_line(0, 10, 4*(n-1), GFX_PIXEL_CLR);
@@ -111,7 +122,7 @@ void io_init(void) {
 	pio_set_debounce_filter(BUT2_PIO, BUT2_PIO_IDX_MASK, 60);
 	pio_set_debounce_filter(BUT3_PIO, BUT3_PIO_IDX_MASK, 60);
 	
-	// Configura interrupção no pinto do botão e associa a ele o callback
+	// Configura interrupção no pino do botão e associa a ele o callback
 	pio_handler_set(
 		BUT1_PIO,
 		BUT1_PIO_ID,
