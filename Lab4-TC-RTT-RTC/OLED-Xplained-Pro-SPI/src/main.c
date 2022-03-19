@@ -16,10 +16,12 @@ typedef struct  {
 } calendar;
 
 
-volatile int but1_flag = 0;
-volatile int rtc_alarm_flag = 0;
-volatile int rtc_count_flag = 0;
-volatile int rtt_alarm_flag = 0;
+volatile char but1_flag;
+volatile char rtc_alarm_flag = 0;
+volatile char rtc_count_flag = 0;
+volatile char rtt_alarm_flag = 0;
+volatile char new_tc_flag = 0;
+volatile int led3_counter = 0;
 
 
 /* LED da placa SAME70 */
@@ -54,7 +56,7 @@ volatile int rtt_alarm_flag = 0;
 
 
 void but1_callback(void);
-void draw_time(void);
+void draw_time(uint32_t current_hour, uint32_t current_min, uint32_t current_sec);
 void pin_toggle(Pio *pio, uint32_t mask);
 static void RTT_init(float freqPrescale, uint32_t IrqNPulses, uint32_t rttIRQSource);
 void RTC_init(Rtc *rtc, uint32_t id_rtc, calendar t, uint32_t irq_type);
@@ -78,16 +80,18 @@ void pin_toggle (Pio *pio, uint32_t mask) {
 }
 
 
-void draw_time(void) {
+void draw_time(uint32_t current_hour, uint32_t current_min, uint32_t current_sec) {
 	gfx_mono_draw_line(0, 0, 128, 32, GFX_PIXEL_CLR);
-	uint32_t current_hour, current_min, current_sec;
-	rtc_get_time(RTC, &current_hour, &current_min, &current_sec);
-	char time_display[8];
-	sprintf(time_display, "%2d:%2d:%2d", current_hour, current_min,current_sec);
+	char time_display[10];
+	sprintf(time_display, "%02d:%02d:%02d", current_hour, current_min,current_sec);
 	gfx_mono_draw_string(time_display, 25, 16, &sysfont);
 	gfx_mono_draw_string("JAMES CLOCK", 10, 0, &sysfont);
 }
 
+
+/************************************************************************/
+/* HANDLERS                                                             */
+/************************************************************************/
 
 void TC0_Handler(void) {
 	/* A leitura do periferico informa que a interrupcao foi satisfeita */
@@ -102,6 +106,13 @@ void TC1_Handler(void) {
 }
 
 
+void TC2_Handler(void) {
+	volatile uint32_t status = tc_get_status(TC0, 2);
+	pin_toggle(LED3_PIO, LED3_PIO_IDX_MASK);
+	new_tc_flag = 1;
+}
+
+
 void RTT_Handler(void) {
 	uint32_t ul_status;
 
@@ -110,7 +121,8 @@ void RTT_Handler(void) {
 
 	/* Interrupcao por alarme => muda para interrupcao por contagem */
 	if ((ul_status & RTT_SR_ALMS) == RTT_SR_ALMS) {
-		rtt_alarm_flag = 1;
+		RTT_init(1, 4, RTT_MR_RTTINCIEN);
+		pin_toggle(LED2_PIO, LED2_PIO_IDX_MASK);
 	}
 
 	/* Interrupcao por contagem => */
@@ -141,6 +153,11 @@ void RTC_Handler(void) {
 	rtc_clear_status(RTC, RTC_SCCR_TDERRCLR);
 }
 
+
+
+/************************************************************************/
+/* INITS                                                                */
+/************************************************************************/
 
 void TC_init(Tc *TC, int ID_TC, int TC_CHANNEL, int freq) {
 	uint32_t ul_div;
@@ -221,7 +238,8 @@ void leds_init(void) {
 	pio_configure(LED_PIO, PIO_OUTPUT_1, LED_PIO_IDX_MASK, PIO_DEFAULT);
 	pio_configure(LED1_PIO, PIO_OUTPUT_0, LED1_PIO_IDX_MASK, PIO_DEFAULT);
 	pio_configure(LED2_PIO, PIO_OUTPUT_0, LED2_PIO_IDX_MASK, PIO_DEFAULT);
-	pio_configure(LED3_PIO, PIO_OUTPUT_1, LED3_PIO_IDX_MASK, PIO_DEFAULT);
+	//pio_configure(LED3_PIO, PIO_OUTPUT_1, LED3_PIO_IDX_MASK, PIO_DEFAULT);
+	pio_set_output(LED3_PIO, LED3_PIO_IDX_MASK, 1, 0, 0);
 }
 
 
@@ -239,14 +257,15 @@ void buts_init(void) {
 	);
 	
 	pio_enable_interrupt(BUT1_PIO, BUT1_PIO_IDX_MASK);
+	pio_get_interrupt_status(BUT1_PIO);
 	NVIC_EnableIRQ(BUT1_PIO_ID);
 	NVIC_SetPriority(BUT1_PIO_ID, 4);
 }
 
 
 void io_init(void) {
-	leds_init();
 	buts_init();
+	leds_init();
 	
 	/* Inicializa o TC0, canal 0 para contar piscagem do LED */
 	TC_init(TC0, ID_TC0, 0, 5);
@@ -267,50 +286,68 @@ void io_init(void) {
 }
 
 
+
+/************************************************************************/
+/* MAIN                                                                 */
+/************************************************************************/
 int main (void) {
 	board_init();
 	sysclk_init();
-	WDT -> WDT_MR = WDT_MR_WDDIS;
+	
+	
 	delay_init();
 	io_init();
+	
+	WDT->WDT_MR = WDT_MR_WDDIS;
 
 	gfx_mono_ssd1306_init();
     //gfx_mono_draw_string("APS 4", 50, 16, &sysfont);
+	
+	/* Leitura do valor atual do RTC */
+	uint32_t current_hour, current_min, current_sec;
 
 	while(1) {
-		if (but1_flag) {
-			/* Leitura do valor atual do RTC */
-			uint32_t current_hour, current_min, current_sec;
-			uint32_t current_year, current_month, current_day, current_week;
+		if (rtc_count_flag) {
 			rtc_get_time(RTC, &current_hour, &current_min, &current_sec);
-			rtc_get_date(RTC, &current_year, &current_month, &current_day, &current_week);
-			
+			draw_time(current_hour, current_min, current_sec);
+			rtc_count_flag = 0;
+		}
+		if (but1_flag) {
+			// Desabilita o tc2 para parar de piscar o LED 3 e começa a contagem
+			// de 20s. Depois desse tempo, o tc2 é ativado para piscar o LED.
+			tc_disable_interrupt(TC0, 2, TC_IDR_CPCS);
+			if (!pio_get_output_data_status(LED3_PIO, LED3_PIO_IDX_MASK)) {
+				pio_set(LED3_PIO, LED3_PIO_IDX_MASK);
+			}
+			rtc_get_time(RTC, &current_hour, &current_min, &current_sec);
 			/* configura alarme do RTC para daqui 20 segundos */
-			rtc_set_date_alarm(RTC, 1, current_month, 1, current_day);
 			if (current_sec + 20 >= 60) {
 				rtc_set_time_alarm(RTC, 1, current_hour, 1, current_min+1, 1, current_sec + 20 - 60);
 			}
 			else {
-				rtc_set_time_alarm(RTC, 1, current_hour, 1, current_min, 1, current_sec + 20);	
+				rtc_set_time_alarm(RTC, 1, current_hour, 1, current_min, 1, current_sec + 20);
 			}
+			but1_flag = 0;
 		}
 		if (rtc_alarm_flag) {
-			// Pisca o LED3
-			pin_toggle(LED3_PIO, LED3_PIO_IDX_MASK);
-			delay_ms(100);
-			pin_toggle(LED3_PIO, LED3_PIO_IDX_MASK);
+			// Inicia novo TC para o LED3
+			TC_init(TC0, ID_TC2, 2, 6);
+			tc_start(TC0, 2);
+			rtc_alarm_flag = 0;
 		}
-		if (rtc_count_flag) {
-			draw_time();
+		if (new_tc_flag) {
+			// Faz com que o led pisque por um tempo
+			led3_counter += 1;
+			if (led3_counter >= 6 * 20) {
+				led3_counter = 0;
+				tc_disable_interrupt(TC0, 2, TC_IDR_CPCS);
+				if (!pio_get_output_data_status(LED3_PIO, LED3_PIO_IDX_MASK)) {
+					pio_set(LED3_PIO, LED3_PIO_IDX_MASK);
+				}
+			}
+			new_tc_flag = 0;
 		}
-		if (rtt_alarm_flag) {
-			// Inverte sinal do LED2 e reprograma o alarme
-			pin_toggle(LED2_PIO, LED2_PIO_IDX_MASK);
-			RTT_init(1, 4, RTT_MR_ALMIEN);
-		}
-		but1_flag = 0;
-		rtc_alarm_flag = 0;
-		rtc_count_flag = 0;
+		
 		rtt_alarm_flag = 0;
 		pmc_sleep(SAM_PM_SMODE_SLEEP_WFI);
 	}
