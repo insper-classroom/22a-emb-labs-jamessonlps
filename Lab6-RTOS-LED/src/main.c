@@ -15,6 +15,11 @@
 #define LED_PIO_IDX 8
 #define LED_IDX_MASK (1 << LED_PIO_IDX)
 
+#define BUT1_PIO          PIOD
+#define BUT1_PIO_ID       ID_PIOD
+#define BUT1_PIO_IDX      28
+#define BUT1_PIO_IDX_MASK (1 << BUT1_PIO_IDX)
+
 #define USART_COM_ID ID_USART1
 #define USART_COM USART1
 

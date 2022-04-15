@@ -230,8 +230,8 @@
           <file path="src/ASF/sam/drivers/spi/spi.h" framework="" version="3.35.1" source="sam\drivers\spi\spi.h" changed="False" content-id="Atmel.ASF" />
           <file path="src/ASF/sam/drivers/tc/tc.c" framework="" version="3.39.0" source="sam\drivers\tc\tc.c" changed="False" content-id="Atmel.ASF" />
           <file path="src/ASF/sam/drivers/tc/tc.h" framework="" version="3.39.0" source="sam\drivers\tc\tc.h" changed="False" content-id="Atmel.ASF" />
-          <file path="src/ASF/sam/drivers/rtt/rtt.h" framework="" version="3.42.0" source="sam\drivers\rtt\rtt.h" changed="False" content-id="Atmel.ASF" />
           <file path="src/ASF/sam/drivers/rtt/rtt.c" framework="" version="3.42.0" source="sam\drivers\rtt\rtt.c" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/sam/drivers/rtt/rtt.h" framework="" version="3.42.0" source="sam\drivers\rtt\rtt.h" changed="False" content-id="Atmel.ASF" />
         </files>
         <documentation help="http://asf.atmel.com/docs/3.35.1/common.applications.user_application.same70_xplained/html/index.html" />
         <offline-documentation help="" />
@@ -242,9 +242,10 @@
         <board id="board.same70_xplained" value="Add" config="" content-id="Atmel.ASF" />
       </framework-data>
     </AsfFrameworkConfig>
-    <avrtool>com.atmel.avrdbg.tool.edbg</avrtool>
-    <avrtoolserialnumber>FFFFFFFFFFFFFFFFFFFF</avrtoolserialnumber>
-    <avrdeviceexpectedsignature>0xA1020E01</avrdeviceexpectedsignature>
+    <avrtool>
+    </avrtool>
+    <avrtoolserialnumber>ATML2637010000000000</avrtoolserialnumber>
+    <avrdeviceexpectedsignature>0xA1020E00</avrdeviceexpectedsignature>
     <avrtoolinterface>SWD</avrtoolinterface>
     <com_atmel_avrdbg_tool_edbg>
       <ToolOptions>
@@ -254,7 +255,7 @@
         <InterfaceName>SWD</InterfaceName>
       </ToolOptions>
       <ToolType>com.atmel.avrdbg.tool.edbg</ToolType>
-      <ToolNumber>FFFFFFFFFFFFFFFFFFFF</ToolNumber>
+      <ToolNumber>ATML2637010000000000</ToolNumber>
       <ToolName>EDBG</ToolName>
     </com_atmel_avrdbg_tool_edbg>
     <avrtoolinterfaceclock>2000000</avrtoolinterfaceclock>
@@ -398,7 +399,6 @@
       <Value>BOARD=SAME70_XPLAINED</Value>
       <Value>scanf=iscanf</Value>
       <Value>ARM_MATH_CM7=true</Value>
-      <Value>printf=iprintf</Value>
     </ListValues>
   </armgcc.compiler.symbols.DefSymbols>
   <armgcc.compiler.directories.IncludePaths>
@@ -567,12 +567,12 @@
     <Folder Include="src\oled" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="src\ASF\sam\drivers\rtt\rtt.h">
-      <SubType>compile</SubType>
-    </None>
     <Compile Include="src\ASF\sam\drivers\rtt\rtt.c">
       <SubType>compile</SubType>
     </Compile>
+    <None Include="src\ASF\sam\drivers\rtt\rtt.h">
+      <SubType>compile</SubType>
+    </None>
     <Compile Include="src\ASF\sam\drivers\spi\spi.c">
       <SubType>compile</SubType>
     </Compile>
