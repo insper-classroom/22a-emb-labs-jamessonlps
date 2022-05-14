@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Size: 16 px
+ * Size: 24 px
  * Bpp: 1
  * Opts: 
  ******************************************************************************/
@@ -24,10 +24,15 @@
 /*Store the image of the glyphs*/
 static LV_ATTRIBUTE_LARGE_CONST const uint8_t glyph_bitmap[] = {
     /* U+F017 "" */
-    0x7, 0xe0, 0x1f, 0xf8, 0x3f, 0xfc, 0x7e, 0x7e,
-    0x7e, 0x7e, 0xfe, 0x7f, 0xfe, 0x7f, 0xfe, 0x7f,
-    0xfe, 0x3f, 0xff, 0x1f, 0xff, 0xbe, 0x7f, 0xfe,
-    0x3f, 0xfc, 0x1f, 0xf8, 0xf, 0xf0, 0x1, 0x0
+    0x0, 0xfe, 0x0, 0x7, 0xff, 0x0, 0x3f, 0xff,
+    0x80, 0xff, 0xff, 0x83, 0xfc, 0x7f, 0x87, 0xf8,
+    0xff, 0x1f, 0xf1, 0xff, 0x3f, 0xe3, 0xfe, 0xff,
+    0xc7, 0xff, 0xff, 0x8f, 0xff, 0xff, 0x1f, 0xff,
+    0xfe, 0x1f, 0xff, 0xfc, 0x1f, 0xff, 0xfc, 0x1f,
+    0xff, 0xfc, 0x3f, 0xbf, 0xfc, 0xfe, 0x7f, 0xff,
+    0xfc, 0x7f, 0xff, 0xf0, 0xff, 0xff, 0xe0, 0xff,
+    0xff, 0x80, 0x7f, 0xfc, 0x0, 0x7f, 0xf0, 0x0,
+    0x1f, 0x0, 0x0
 };
 
 
@@ -37,7 +42,7 @@ static LV_ATTRIBUTE_LARGE_CONST const uint8_t glyph_bitmap[] = {
 
 static const lv_font_fmt_txt_glyph_dsc_t glyph_dsc[] = {
     {.bitmap_index = 0, .adv_w = 0, .box_w = 0, .box_h = 0, .ofs_x = 0, .ofs_y = 0} /* id = 0 reserved */,
-    {.bitmap_index = 0, .adv_w = 256, .box_w = 16, .box_h = 16, .ofs_x = 0, .ofs_y = -2}
+    {.bitmap_index = 0, .adv_w = 384, .box_w = 23, .box_h = 23, .ofs_x = 0, .ofs_y = -3}
 };
 
 /*---------------------
@@ -95,13 +100,13 @@ lv_font_t clock = {
 #endif
     .get_glyph_dsc = lv_font_get_glyph_dsc_fmt_txt,    /*Function pointer to get glyph's data*/
     .get_glyph_bitmap = lv_font_get_bitmap_fmt_txt,    /*Function pointer to get glyph's bitmap*/
-    .line_height = 16,          /*The maximum line height required by the font*/
-    .base_line = 2,             /*Baseline measured from the bottom of the line*/
+    .line_height = 23,          /*The maximum line height required by the font*/
+    .base_line = 3,             /*Baseline measured from the bottom of the line*/
 #if !(LVGL_VERSION_MAJOR == 6 && LVGL_VERSION_MINOR == 0)
     .subpx = LV_FONT_SUBPX_NONE,
 #endif
 #if LV_VERSION_CHECK(7, 4, 0) || LVGL_VERSION_MAJOR >= 8
-    .underline_position = -6,
+    .underline_position = -9,
     .underline_thickness = 1,
 #endif
     .dsc = &font_dsc           /*The custom font data. Will be accessed by `get_glyph_bitmap/dsc` */

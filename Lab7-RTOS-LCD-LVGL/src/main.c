@@ -161,13 +161,6 @@ void RTC_Handler(void) {
 
 static void event_handler(lv_event_t * e) {
 	lv_event_code_t code = lv_event_get_code(e);
-
-	if(code == LV_EVENT_CLICKED) {
-		LV_LOG_USER("Clicked");
-	}
-	else if(code == LV_EVENT_VALUE_CHANGED) {
-		LV_LOG_USER("Toggled");
-	}
 }
 
 static void menu_handler(lv_event_t *e) {
@@ -216,33 +209,11 @@ static void down_handler(lv_event_t *e) {
 /* LVGL DESIGNS                                                         */
 /************************************************************************/
 
-//void lv_ex_btn_1(void) {
-	//lv_obj_t * label;
-//
-	//lv_obj_t * btn1 = lv_btn_create(lv_scr_act());
-	//lv_obj_add_event_cb(btn1, event_handler, LV_EVENT_ALL, NULL);
-	//lv_obj_align(btn1, LV_ALIGN_CENTER, 0, -40);
-//
-	//label = lv_label_create(btn1);
-	//lv_label_set_text(label, "Corsi");
-	//lv_obj_center(label);
-//
-	//lv_obj_t * btn2 = lv_btn_create(lv_scr_act());
-	//lv_obj_add_event_cb(btn2, event_handler, LV_EVENT_ALL, NULL);
-	//lv_obj_align(btn2, LV_ALIGN_CENTER, 0, 40);
-	//lv_obj_add_flag(btn2, LV_OBJ_FLAG_CHECKABLE);
-	//lv_obj_set_height(btn2, LV_SIZE_CONTENT);
-//
-	//label = lv_label_create(btn2);
-	//lv_label_set_text(label, "Toggle");
-	//lv_obj_center(label);
-//}
-
 void lv_termostato(void) {
 	static lv_style_t style;
 	lv_style_init(&style);
 	lv_style_set_bg_color(&style, lv_color_black());
-	lv_style_set_pad_all(&style, 0); // AQUIIIIIIIIIIIIIIII
+	lv_style_set_pad_all(&style, 0);
 	lv_style_set_border_width(&style, 0);
 	
 	/* Configure power button */
@@ -260,16 +231,17 @@ void lv_termostato(void) {
 	lv_obj_align_to(btnMenu, btn1, LV_ALIGN_OUT_RIGHT_TOP, 5, 0);
 	lv_obj_add_style(btnMenu, &style, 0);
 	labelBtnMenu = lv_label_create(btnMenu);
-	lv_label_set_text(labelBtnMenu, "| M");
+	lv_label_set_text(labelBtnMenu, "| M | ");
 	lv_obj_center(labelBtnMenu);
 	
 	/* Configure clock button */
 	lv_obj_t *btnClock = lv_btn_create(lv_scr_act());
 	lv_obj_add_event_cb(btnClock, clk_handler, LV_EVENT_ALL, NULL);
-	lv_obj_align_to(btnClock, btnMenu, LV_ALIGN_OUT_RIGHT_TOP, 5, 0);
+	lv_obj_align_to(btnClock, btnMenu, LV_ALIGN_OUT_RIGHT_TOP, 5, 3);
 	lv_obj_add_style(btnClock, &style, 0);
+	lv_obj_set_style_text_font(btnClock, &clock, LV_STATE_DEFAULT);
 	labelBtnClock = lv_label_create(btnClock);
-	lv_label_set_text(labelBtnClock, "| " LV_SYMBOL_BELL " ]");
+	lv_label_set_text(labelBtnClock, LV_SYMBOL_CLOCK " ]");
 	lv_obj_center(labelBtnClock);
 	
 	/* Configure home button */
@@ -280,28 +252,6 @@ void lv_termostato(void) {
 	labelBtnHome = lv_label_create(btnHome);
 	lv_label_set_text(labelBtnHome, LV_SYMBOL_HOME);
 	lv_obj_center(labelBtnHome);
-	
-	
-	
-	
-	
-	///* Configure up button */
-	//lv_obj_t *btnUp = lv_btn_create(lv_scr_act());
-	//lv_obj_add_event_cb(btnUp, up_handler, LV_EVENT_ALL, NULL);
-	//lv_obj_align_to(btnUp, btnClock, LV_ALIGN_OUT_RIGHT_TOP, 10, 0);
-	//lv_obj_add_style(btnUp, &style, 0);
-	//labelUpButton = lv_label_create(btnUp);
-	//lv_label_set_text(labelUpButton, "  [ " LV_SYMBOL_UP);
-	//lv_obj_center(labelUpButton);
-	
-	///* Configure down button */
-	//lv_obj_t *btnDown = lv_btn_create(lv_scr_act());
-	//lv_obj_add_event_cb(btnDown, down_handler, LV_EVENT_ALL, NULL);
-	//lv_obj_align_to(btnDown, btnUp, LV_ALIGN_OUT_RIGHT_TOP, 0, 0);
-	//lv_obj_add_style(btnDown, &style, 0);
-	//labelDownButton = lv_label_create(btnDown);
-	//lv_label_set_text(labelDownButton, " | " LV_SYMBOL_DOWN " ]");
-	//lv_obj_center(labelDownButton);
 	
 	/* Configure down button */
 	lv_obj_t *btnDown = lv_btn_create(lv_scr_act());
@@ -363,14 +313,13 @@ void lv_termostato(void) {
 	labelBtnSettings = lv_label_create(btnSettings);
 	lv_label_set_text(labelBtnSettings, LV_SYMBOL_SETTINGS);
 	lv_obj_center(labelBtnSettings);
-	
-	// ARRUMAR CLOCK (DELETAR OU TENTAR DE NOVO)
-	// ........................................
+
 	/* Configure clock2 button */
 	lv_obj_t *btnClock2 = lv_btn_create(lv_scr_act());
 	lv_obj_add_event_cb(btnClock2, clk2_handler, LV_EVENT_ALL, NULL);
-	lv_obj_align_to(btnClock2, labelSetValue, LV_ALIGN_CENTER, 0, 0);
+	lv_obj_align_to(btnClock2, labelSetValue, LV_ALIGN_OUT_BOTTOM_LEFT, 0, 5);
 	lv_obj_add_style(btnClock2, &style, 0);
+	lv_obj_set_style_text_font(btnClock2, &clock, LV_STATE_DEFAULT);
 	labelBtnClock2 = lv_label_create(btnClock2);
 	lv_label_set_text(labelBtnClock2, LV_SYMBOL_CLOCK);
 	lv_obj_center(labelBtnClock2);
@@ -382,12 +331,6 @@ void lv_termostato(void) {
 
 static void task_lcd(void *pvParameters) {
 	int px, py;
-	
-	//lv_obj_t * img = lv_img_create(lv_scr_act());
-	//lv_img_set_src(img, &page3);
-	//lv_obj_align(img, LV_ALIGN_CENTER, 0, 0);
-
-	//lv_ex_btn_1();
 	
 	lv_termostato();
 
