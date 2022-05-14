@@ -630,6 +630,8 @@ src\dseg40.c
 
 src\dseg70.c
 
+src\heat.c
+
 src\touch\touch.c
 
 src\ASF\common\services\sleepmgr\sam\sleepmgr.c

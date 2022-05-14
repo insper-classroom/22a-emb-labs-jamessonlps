@@ -16,11 +16,13 @@ LV_FONT_DECLARE(dseg25);
 LV_FONT_DECLARE(dseg40);
 LV_FONT_DECLARE(dseg70);
 LV_FONT_DECLARE(clock);
+LV_FONT_DECLARE(heat);
 
 /************************************************************************/
 /* EXTERNAL SYMBOLS                                                     */
 /************************************************************************/
 #define LV_SYMBOL_CLOCK 	"\xEF\x80\x97"
+#define MY_SYMBOL_WIND      "\xEF\x9C\xAE"
 
 /************************************************************************/
 /* LCD / LVGL                                                           */
@@ -50,8 +52,18 @@ static lv_obj_t *labelDownButton;
 static lv_obj_t *labelFloor;
 static lv_obj_t *labelFloorDigit;
 static lv_obj_t *labelClock;
+static lv_obj_t *labelWeekDay;
 static lv_obj_t *labelSetValue;
 static lv_obj_t *labelBtnClock2;
+static lv_obj_t *labelTempImage;
+static lv_obj_t *labelSetText;
+
+volatile uint edit_time = 0; // 0: não faz nada | 1: edita min | 2: edita hora
+
+/************************************************************************/
+/* TASKS                                                                */
+/************************************************************************/
+TaskHandle_t xRtcHandle;
 
 /************************************************************************/
 /* QUEUES & SEMAPHORES                                                  */
@@ -136,7 +148,7 @@ void RTC_Handler(void) {
 	uint32_t ul_status = rtc_get_status(RTC);
 	
 	/* seccond tick */
-	if ((ul_status & RTC_SR_SEC) == RTC_SR_SEC) {
+	if ((ul_status & RTC_SR_SEC) == RTC_SR_SEC && edit_time == 0) {
 		// o código para irq de segundo vem aqui
 		BaseType_t xHigherPriorityTaskWoken = pdTRUE;
 		xSemaphoreGiveFromISR(xSemaphoreRTC, &xHigherPriorityTaskWoken);
@@ -175,8 +187,38 @@ static void home_handler(lv_event_t *e) {
 	lv_event_code_t code = lv_event_get_code(e);
 }
 
+
+/**
+ * \brief Muda a variável edit_time definida para:
+ * 0: botões up e down editam a temperatura
+ * 1: botões up e down editam os minutos
+ * 2: botões up e down editam a hora
+ * 
+ * \param e evento de botão
+ * 
+ * \return void
+ */
 static void settings_handler(lv_event_t *e) {
 	lv_event_code_t code = lv_event_get_code(e);
+
+	if (code == LV_EVENT_CLICKED) {
+		edit_time++;
+		if (edit_time > 2) {
+			edit_time = 0;
+		}
+		
+		/* Desativa interrupção do RTC e suspende a task */
+		if (edit_time == 1) {
+			rtc_disable_interrupt(RTC, RTC_IER_SECEN);
+			vTaskSuspend(xRtcHandle);
+		}
+
+		else if (edit_time == 0) {
+			/* Reativa interrupção do RTC e a task */
+			rtc_enable_interrupt(RTC, RTC_IER_SECEN);
+			vTaskResume(xRtcHandle);
+		}
+	}
 }
 
 static void clk2_handler(lv_event_t *e) {
@@ -188,17 +230,57 @@ static void up_handler(lv_event_t *e) {
 	char *c;
 	int temp;
 	if (code == LV_EVENT_CLICKED) {
-		c = lv_label_get_text(labelSetValue);
-		temp = atoi(c);
-		lv_label_set_text_fmt(labelSetValue, "%02d", temp + 1);
+		/* Quando edit_time=1, altera minuto */
+		if (edit_time == 1) {
+			uint32_t current_min, current_sec, current_hour;
+			rtc_get_time(RTC, &current_hour, &current_min, &current_sec);
+			current_min++;
+			rtc_set_time(RTC, current_hour, current_min, current_sec);
+			lv_label_set_text_fmt(labelClock, "%02d:%02d", current_hour, current_min);
+		}
+		/* Quando edit_time=2, altera hora */
+		else if (edit_time == 2) {
+			uint32_t current_min, current_sec, current_hour;
+			rtc_get_time(RTC, &current_hour, &current_min, &current_sec);
+			current_hour++;
+			rtc_set_time(RTC, current_hour, current_min, current_sec);
+			lv_label_set_text_fmt(labelClock, "%02d:%02d", current_hour, current_min);
+		}
+		/* Quando edit_time=0, altera temperatura */
+		else if (edit_time == 0) {
+			c = lv_label_get_text(labelSetValue);
+			temp = atoi(c);
+			lv_label_set_text_fmt(labelSetValue, "%02d", temp + 1);
+		}
 	}
+	
+	
+	
 }
 
 static void down_handler(lv_event_t *e) {
 	lv_event_code_t code = lv_event_get_code(e);
 	char *c;
 	int temp;
-	if (code == LV_EVENT_CLICKED) {
+	/* Quando o botão é pressionado e edit_time=1, altera minuto */
+	if ((code == LV_EVENT_CLICKED) && edit_time == 1) {
+		uint32_t current_min, current_sec, current_hour;
+		rtc_get_time(RTC, &current_hour, &current_min, &current_sec);
+		current_min--;
+		rtc_set_time(RTC, current_hour, current_min, current_sec);
+		lv_label_set_text_fmt(labelClock, "%02d:%02d", current_hour, current_min);
+	}
+	/* Quando o botão é pressionado e edit_time=2, altera hora */
+	else if ((code == LV_EVENT_CLICKED) && edit_time == 2) {
+		uint32_t current_min, current_sec, current_hour;
+		rtc_get_time(RTC, &current_hour, &current_min, &current_sec);
+		current_hour--;
+		rtc_set_time(RTC, current_hour, current_min, current_sec);
+		lv_label_set_text_fmt(labelClock, "%02d:%02d", current_hour, current_min);
+	}
+
+	/* Quando o botão é pressionado e edit_time=0, altera temperatura */
+	else if (code == LV_EVENT_CLICKED && edit_time == 0) {
 		c = lv_label_get_text(labelSetValue);
 		temp = atoi(c);
 		lv_label_set_text_fmt(labelSetValue, "%02d", temp - 1);
@@ -211,6 +293,9 @@ static void down_handler(lv_event_t *e) {
 
 void lv_termostato(void) {
 	static lv_style_t style;
+	static lv_obj_t *labelCelcius;
+	static lv_obj_t *labelFloorTemp;
+
 	lv_style_init(&style);
 	lv_style_set_bg_color(&style, lv_color_black());
 	lv_style_set_pad_all(&style, 0);
@@ -256,7 +341,7 @@ void lv_termostato(void) {
 	/* Configure down button */
 	lv_obj_t *btnDown = lv_btn_create(lv_scr_act());
 	lv_obj_add_event_cb(btnDown, down_handler, LV_EVENT_ALL, NULL);
-	lv_obj_align(btnDown, LV_ALIGN_BOTTOM_RIGHT, 0, 0);
+	lv_obj_align(btnDown, LV_ALIGN_BOTTOM_RIGHT, 0, -5);
 	lv_obj_add_style(btnDown, &style, 0);
 	labelDownButton = lv_label_create(btnDown);
 	lv_label_set_text(labelDownButton, " | " LV_SYMBOL_DOWN " ]");
@@ -272,11 +357,6 @@ void lv_termostato(void) {
 	lv_obj_center(labelUpButton);
 	
 	
-	
-	
-	
-	
-	
 	/* Configure label temperature floor */
 	labelFloor = lv_label_create(lv_scr_act());
 	lv_obj_align(labelFloor, LV_ALIGN_LEFT_MID, 35 , -45);
@@ -290,6 +370,20 @@ void lv_termostato(void) {
 	lv_obj_set_style_text_font(labelFloorDigit, &dseg40, LV_STATE_DEFAULT);
 	lv_obj_set_style_text_color(labelFloorDigit, lv_color_white(), LV_STATE_DEFAULT);
 	lv_label_set_text_fmt(labelFloorDigit, ".%d", 4);
+	
+	/* Configure week day label */
+	labelWeekDay = lv_label_create(lv_scr_act());
+	lv_obj_align_to(labelWeekDay, labelFloor, LV_ALIGN_OUT_TOP_LEFT, 0, 0);
+	lv_obj_set_style_text_font(labelWeekDay, &lv_font_montserrat_12, LV_STATE_DEFAULT);
+	lv_obj_set_style_text_color(labelWeekDay, lv_color_white(), LV_STATE_DEFAULT);
+	lv_label_set_text(labelWeekDay, "MON");
+	
+	/* Configure FLOOR TEMP label */
+	labelFloorTemp = lv_label_create(lv_scr_act());
+	lv_obj_align_to(labelFloorTemp, labelFloor, LV_ALIGN_OUT_LEFT_MID, 20, 0);
+	lv_obj_set_style_text_font(labelFloorTemp, &lv_font_montserrat_8, LV_STATE_DEFAULT);
+	lv_obj_set_style_text_color(labelFloorTemp, lv_color_white(), LV_STATE_DEFAULT);
+	lv_label_set_text(labelFloorTemp, "FLOOR\nTEMP");
 	
 	/* Configure clock floor */
 	labelClock = lv_label_create(lv_scr_act());
@@ -313,6 +407,13 @@ void lv_termostato(void) {
 	labelBtnSettings = lv_label_create(btnSettings);
 	lv_label_set_text(labelBtnSettings, LV_SYMBOL_SETTINGS);
 	lv_obj_center(labelBtnSettings);
+	
+	/* Configure set text label */
+	labelSetText = lv_label_create(lv_scr_act());
+	lv_obj_align_to(labelSetText, labelBtnSettings, LV_ALIGN_OUT_BOTTOM_LEFT, 0, 0);
+	lv_obj_set_style_text_font(labelSetText, &lv_font_montserrat_12, LV_STATE_DEFAULT);
+	lv_obj_set_style_text_color(labelSetText, lv_color_white(), LV_STATE_DEFAULT);
+	lv_label_set_text(labelSetText, "SET");
 
 	/* Configure clock2 button */
 	lv_obj_t *btnClock2 = lv_btn_create(lv_scr_act());
@@ -323,6 +424,20 @@ void lv_termostato(void) {
 	labelBtnClock2 = lv_label_create(btnClock2);
 	lv_label_set_text(labelBtnClock2, LV_SYMBOL_CLOCK);
 	lv_obj_center(labelBtnClock2);
+	
+	/* Configure week day label */
+	labelTempImage = lv_label_create(lv_scr_act());
+	lv_obj_align_to(labelTempImage, labelSetValue, LV_ALIGN_OUT_BOTTOM_RIGHT, 25, 8);
+	lv_obj_set_style_text_font(labelTempImage, &heat, LV_STATE_DEFAULT);
+	lv_obj_set_style_text_color(labelTempImage, lv_color_white(), LV_STATE_DEFAULT);
+	lv_label_set_text(labelTempImage, MY_SYMBOL_WIND);
+	
+	/* Configure °C label */
+	labelCelcius = lv_label_create(lv_scr_act());
+	lv_obj_align_to(labelCelcius, labelSetValue, LV_ALIGN_OUT_RIGHT_TOP, 5, 0);
+	lv_obj_set_style_text_font(labelCelcius, &lv_font_montserrat_12, LV_STATE_DEFAULT);
+	lv_obj_set_style_text_color(labelCelcius, lv_color_white(), LV_STATE_DEFAULT);
+	lv_label_set_text(labelCelcius, " °C");
 }
 
 /************************************************************************/
@@ -343,12 +458,14 @@ static void task_lcd(void *pvParameters) {
 
 void task_rtc(void *pvParameters) {
 	uint32_t current_hour, current_min, current_sec;
+	//uint32_t current_year, current_month, current_day, current_week;
 	
 	calendar rtc_initial = {2022, 5, 19, 12, 15, 45 ,1};
 	RTC_init(RTC, ID_RTC, rtc_initial, RTC_IER_SECEN);
 	
 	for (;;) {
 		if (xSemaphoreTake(xSemaphoreRTC, portMAX_DELAY) == pdTRUE) {
+			//rtc_get_date(RTC, &current_year, &current_month, &current_day, &current_week);
 			rtc_get_time(RTC, &current_hour, &current_min, &current_sec);
 			if (current_sec % 2 == 0) {
 				lv_label_set_text_fmt(labelClock, "%02d:%02d", current_hour, current_min);
@@ -461,7 +578,7 @@ int main(void) {
 	}
 	
 	/* Create task to control rtc */
-	if (xTaskCreate(task_rtc, "RTC", TASK_RTC_STACK_SIZE, NULL, TASK_RTC_STACK_PRIORITY, NULL) != pdPASS) {
+	if (xTaskCreate(task_rtc, "RTC", TASK_RTC_STACK_SIZE, NULL, TASK_RTC_STACK_PRIORITY, &xRtcHandle) != pdPASS) {
 		printf("Failed to create rtc task\r\n");
 	}
 	

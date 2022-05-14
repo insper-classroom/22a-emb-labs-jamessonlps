@@ -2295,6 +2295,9 @@
     <Compile Include="src\dseg70.c">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="src\heat.c">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="src\touch\touch.c">
       <SubType>compile</SubType>
     </Compile>
