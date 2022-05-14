@@ -15,6 +15,12 @@
 LV_FONT_DECLARE(dseg25);
 LV_FONT_DECLARE(dseg40);
 LV_FONT_DECLARE(dseg70);
+LV_FONT_DECLARE(clock);
+
+/************************************************************************/
+/* EXTERNAL SYMBOLS                                                     */
+/************************************************************************/
+#define LV_SYMBOL_CLOCK 	"\xEF\x80\x97"
 
 /************************************************************************/
 /* LCD / LVGL                                                           */
@@ -37,11 +43,15 @@ static lv_indev_drv_t indev_drv;
 static lv_obj_t *labelBtn1;
 static lv_obj_t *labelBtnMenu;
 static lv_obj_t *labelBtnClock;
+static lv_obj_t *labelBtnHome;
+static lv_obj_t *labelBtnSettings;
 static lv_obj_t *labelUpButton;
 static lv_obj_t *labelDownButton;
 static lv_obj_t *labelFloor;
+static lv_obj_t *labelFloorDigit;
 static lv_obj_t *labelClock;
 static lv_obj_t *labelSetValue;
+static lv_obj_t *labelBtnClock2;
 
 /************************************************************************/
 /* QUEUES & SEMAPHORES                                                  */
@@ -168,6 +178,18 @@ static void clk_handler(lv_event_t *e) {
 	lv_event_code_t code = lv_event_get_code(e);
 }
 
+static void home_handler(lv_event_t *e) {
+	lv_event_code_t code = lv_event_get_code(e);
+}
+
+static void settings_handler(lv_event_t *e) {
+	lv_event_code_t code = lv_event_get_code(e);
+}
+
+static void clk2_handler(lv_event_t *e) {
+	lv_event_code_t code = lv_event_get_code(e);
+}
+
 static void up_handler(lv_event_t *e) {
 	lv_event_code_t code = lv_event_get_code(e);
 	char *c;
@@ -220,6 +242,7 @@ void lv_termostato(void) {
 	static lv_style_t style;
 	lv_style_init(&style);
 	lv_style_set_bg_color(&style, lv_color_black());
+	lv_style_set_pad_all(&style, 0); // AQUIIIIIIIIIIIIIIII
 	lv_style_set_border_width(&style, 0);
 	
 	/* Configure power button */
@@ -249,30 +272,74 @@ void lv_termostato(void) {
 	lv_label_set_text(labelBtnClock, "| " LV_SYMBOL_BELL " ]");
 	lv_obj_center(labelBtnClock);
 	
-	/* Configure up button */
-	lv_obj_t *btnUp = lv_btn_create(lv_scr_act());
-	lv_obj_add_event_cb(btnUp, up_handler, LV_EVENT_ALL, NULL);
-	lv_obj_align_to(btnUp, btnClock, LV_ALIGN_OUT_RIGHT_TOP, 10, 0);
-	lv_obj_add_style(btnUp, &style, 0);
-	labelUpButton = lv_label_create(btnUp);
-	lv_label_set_text(labelUpButton, "  [ " LV_SYMBOL_UP);
-	lv_obj_center(labelUpButton);
+	/* Configure home button */
+	lv_obj_t *btnHome = lv_btn_create(lv_scr_act());
+	lv_obj_add_event_cb(btnHome, home_handler, LV_EVENT_ALL, NULL);
+	lv_obj_align_to(btnHome, btnClock, LV_ALIGN_OUT_TOP_RIGHT, 30, -15);
+	lv_obj_add_style(btnHome, &style, 0);
+	labelBtnHome = lv_label_create(btnHome);
+	lv_label_set_text(labelBtnHome, LV_SYMBOL_HOME);
+	lv_obj_center(labelBtnHome);
+	
+	
+	
+	
+	
+	///* Configure up button */
+	//lv_obj_t *btnUp = lv_btn_create(lv_scr_act());
+	//lv_obj_add_event_cb(btnUp, up_handler, LV_EVENT_ALL, NULL);
+	//lv_obj_align_to(btnUp, btnClock, LV_ALIGN_OUT_RIGHT_TOP, 10, 0);
+	//lv_obj_add_style(btnUp, &style, 0);
+	//labelUpButton = lv_label_create(btnUp);
+	//lv_label_set_text(labelUpButton, "  [ " LV_SYMBOL_UP);
+	//lv_obj_center(labelUpButton);
+	
+	///* Configure down button */
+	//lv_obj_t *btnDown = lv_btn_create(lv_scr_act());
+	//lv_obj_add_event_cb(btnDown, down_handler, LV_EVENT_ALL, NULL);
+	//lv_obj_align_to(btnDown, btnUp, LV_ALIGN_OUT_RIGHT_TOP, 0, 0);
+	//lv_obj_add_style(btnDown, &style, 0);
+	//labelDownButton = lv_label_create(btnDown);
+	//lv_label_set_text(labelDownButton, " | " LV_SYMBOL_DOWN " ]");
+	//lv_obj_center(labelDownButton);
 	
 	/* Configure down button */
 	lv_obj_t *btnDown = lv_btn_create(lv_scr_act());
 	lv_obj_add_event_cb(btnDown, down_handler, LV_EVENT_ALL, NULL);
-	lv_obj_align_to(btnDown, btnUp, LV_ALIGN_OUT_RIGHT_TOP, 0, 0);
+	lv_obj_align(btnDown, LV_ALIGN_BOTTOM_RIGHT, 0, 0);
 	lv_obj_add_style(btnDown, &style, 0);
 	labelDownButton = lv_label_create(btnDown);
 	lv_label_set_text(labelDownButton, " | " LV_SYMBOL_DOWN " ]");
 	lv_obj_center(labelDownButton);
 	
-	/* Configure label floor */
+	/* Configure up button */
+	lv_obj_t *btnUp = lv_btn_create(lv_scr_act());
+	lv_obj_add_event_cb(btnUp, up_handler, LV_EVENT_ALL, NULL);
+	lv_obj_align_to(btnUp, btnDown, LV_ALIGN_OUT_LEFT_TOP, -20, 0);
+	lv_obj_add_style(btnUp, &style, 0);
+	labelUpButton = lv_label_create(btnUp);
+	lv_label_set_text(labelUpButton, "  [ " LV_SYMBOL_UP);
+	lv_obj_center(labelUpButton);
+	
+	
+	
+	
+	
+	
+	
+	/* Configure label temperature floor */
 	labelFloor = lv_label_create(lv_scr_act());
 	lv_obj_align(labelFloor, LV_ALIGN_LEFT_MID, 35 , -45);
 	lv_obj_set_style_text_font(labelFloor, &dseg70, LV_STATE_DEFAULT);
 	lv_obj_set_style_text_color(labelFloor, lv_color_white(), LV_STATE_DEFAULT);
 	lv_label_set_text_fmt(labelFloor, "%02d", 23);
+	
+	/* Configure label temperature digit floor */
+	labelFloorDigit = lv_label_create(lv_scr_act());
+	lv_obj_align_to(labelFloorDigit, labelFloor, LV_ALIGN_OUT_RIGHT_MID, 0, 5);
+	lv_obj_set_style_text_font(labelFloorDigit, &dseg40, LV_STATE_DEFAULT);
+	lv_obj_set_style_text_color(labelFloorDigit, lv_color_white(), LV_STATE_DEFAULT);
+	lv_label_set_text_fmt(labelFloorDigit, ".%d", 4);
 	
 	/* Configure clock floor */
 	labelClock = lv_label_create(lv_scr_act());
@@ -287,6 +354,26 @@ void lv_termostato(void) {
 	lv_obj_set_style_text_font(labelSetValue, &dseg40, LV_STATE_DEFAULT);
 	lv_obj_set_style_text_color(labelSetValue, lv_color_white(), LV_STATE_DEFAULT);
 	lv_label_set_text_fmt(labelSetValue, "%02d", 22);
+	
+	/* Configure settings button */
+	lv_obj_t *btnSettings = lv_btn_create(lv_scr_act());
+	lv_obj_add_event_cb(btnSettings, settings_handler, LV_EVENT_ALL, NULL);
+	lv_obj_align_to(btnSettings, labelSetValue, LV_ALIGN_OUT_LEFT_TOP, 0, 0);
+	lv_obj_add_style(btnSettings, &style, 0);
+	labelBtnSettings = lv_label_create(btnSettings);
+	lv_label_set_text(labelBtnSettings, LV_SYMBOL_SETTINGS);
+	lv_obj_center(labelBtnSettings);
+	
+	// ARRUMAR CLOCK (DELETAR OU TENTAR DE NOVO)
+	// ........................................
+	/* Configure clock2 button */
+	lv_obj_t *btnClock2 = lv_btn_create(lv_scr_act());
+	lv_obj_add_event_cb(btnClock2, clk2_handler, LV_EVENT_ALL, NULL);
+	lv_obj_align_to(btnClock2, labelSetValue, LV_ALIGN_CENTER, 0, 0);
+	lv_obj_add_style(btnClock2, &style, 0);
+	labelBtnClock2 = lv_label_create(btnClock2);
+	lv_label_set_text(labelBtnClock2, LV_SYMBOL_CLOCK);
+	lv_obj_center(labelBtnClock2);
 }
 
 /************************************************************************/
