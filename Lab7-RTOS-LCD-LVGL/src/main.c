@@ -65,7 +65,7 @@ static lv_obj_t *labelBtnClock2;
 static lv_obj_t *labelTempImage;
 static lv_obj_t *labelSetText;
 
-volatile uint edit_time = 0; // 0: não faz nada | 1: edita min | 2: edita hora
+volatile uint edit_time = 0; // 0: nï¿½o faz nada | 1: edita min | 2: edita hora
 
 /************************************************************************/
 /* TASKS                                                                */
@@ -200,7 +200,7 @@ void RTC_Handler(void)
   /* seccond tick */
   if ((ul_status & RTC_SR_SEC) == RTC_SR_SEC && edit_time == 0)
   {
-    // o código para irq de segundo vem aqui
+    // o cï¿½digo para irq de segundo vem aqui
     BaseType_t xHigherPriorityTaskWoken = pdTRUE;
     xSemaphoreGiveFromISR(xSemaphoreRTC, &xHigherPriorityTaskWoken);
   }
@@ -208,7 +208,7 @@ void RTC_Handler(void)
   /* Time or date alarm */
   if ((ul_status & RTC_SR_ALARM) == RTC_SR_ALARM)
   {
-    // o código para irq de alame vem aqui
+    // o cï¿½digo para irq de alame vem aqui
   }
 
   rtc_clear_status(RTC, RTC_SCCR_SECCLR);
@@ -228,7 +228,7 @@ void TC1_Handler(void)
   /* Avoid compiler warning */
   UNUSED(ul_dummy);
 
-  /* Selecina canal e inicializa conversão */
+  /* Selecina canal e inicializa conversï¿½o */
   afec_channel_enable(AFEC_POT, AFEC_POT_CHANNEL);
   afec_start_software_conversion(AFEC_POT);
 }
@@ -258,12 +258,12 @@ static void home_handler(lv_event_t *e)
 }
 
 /**
- * \brief Muda a variável edit_time definida para:
- * 0: botões up e down editam a temperatura
- * 1: botões up e down editam os minutos
- * 2: botões up e down editam a hora
+ * \brief Muda a variï¿½vel edit_time definida para:
+ * 0: botï¿½es up e down editam a temperatura
+ * 1: botï¿½es up e down editam os minutos
+ * 2: botï¿½es up e down editam a hora
  *
- * \param e evento de botão
+ * \param e evento de botï¿½o
  *
  * \return void
  */
@@ -279,7 +279,7 @@ static void settings_handler(lv_event_t *e)
       edit_time = 0;
     }
 
-    /* Desativa interrupção do RTC e suspende a task */
+    /* Desativa interrupï¿½ï¿½o do RTC e suspende a task */
     if (edit_time == 1)
     {
       rtc_disable_interrupt(RTC, RTC_IER_SECEN);
@@ -288,7 +288,7 @@ static void settings_handler(lv_event_t *e)
 
     else if (edit_time == 0)
     {
-      /* Reativa interrupção do RTC e a task */
+      /* Reativa interrupï¿½ï¿½o do RTC e a task */
       rtc_enable_interrupt(RTC, RTC_IER_SECEN);
       vTaskResume(xRtcHandle);
     }
@@ -340,7 +340,7 @@ static void down_handler(lv_event_t *e)
   lv_event_code_t code = lv_event_get_code(e);
   char *c;
   int temp;
-  /* Quando o botão é pressionado e edit_time=1, altera minuto */
+  /* Quando o botï¿½o ï¿½ pressionado e edit_time=1, altera minuto */
   if ((code == LV_EVENT_CLICKED) && edit_time == 1)
   {
     uint32_t current_min, current_sec, current_hour;
@@ -349,7 +349,7 @@ static void down_handler(lv_event_t *e)
     rtc_set_time(RTC, current_hour, current_min, current_sec);
     lv_label_set_text_fmt(labelClock, "%02d:%02d", current_hour, current_min);
   }
-  /* Quando o botão é pressionado e edit_time=2, altera hora */
+  /* Quando o botï¿½o ï¿½ pressionado e edit_time=2, altera hora */
   else if ((code == LV_EVENT_CLICKED) && edit_time == 2)
   {
     uint32_t current_min, current_sec, current_hour;
@@ -359,7 +359,7 @@ static void down_handler(lv_event_t *e)
     lv_label_set_text_fmt(labelClock, "%02d:%02d", current_hour, current_min);
   }
 
-  /* Quando o botão é pressionado e edit_time=0, altera temperatura */
+  /* Quando o botï¿½o ï¿½ pressionado e edit_time=0, altera temperatura */
   else if (code == LV_EVENT_CLICKED && edit_time == 0)
   {
     c = lv_label_get_text(labelSetValue);
@@ -388,6 +388,7 @@ void lv_termostato(void)
   static lv_style_t style;
   static lv_obj_t *labelCelcius;
   static lv_obj_t *labelFloorTemp;
+  static lv_obj_t *labelEndOfMenu;
 
   lv_style_init(&style);
   lv_style_set_bg_color(&style, lv_color_black());
@@ -409,7 +410,7 @@ void lv_termostato(void)
   lv_obj_align_to(btnMenu, btn1, LV_ALIGN_OUT_RIGHT_TOP, 5, 0);
   lv_obj_add_style(btnMenu, &style, 0);
   labelBtnMenu = lv_label_create(btnMenu);
-  lv_label_set_text(labelBtnMenu, "| M | ");
+  lv_label_set_text(labelBtnMenu, "| M |");
   lv_obj_center(labelBtnMenu);
 
   /* Configure clock button */
@@ -446,8 +447,14 @@ void lv_termostato(void)
   lv_obj_align_to(btnUp, btnDown, LV_ALIGN_OUT_LEFT_TOP, -20, 0);
   lv_obj_add_style(btnUp, &style, 0);
   labelUpButton = lv_label_create(btnUp);
-  lv_label_set_text(labelUpButton, "  [ " LV_SYMBOL_UP);
+  lv_label_set_text(labelUpButton, " [ " LV_SYMBOL_UP " ");
   lv_obj_center(labelUpButton);
+
+  /* Configure end of left menu */
+  labelEndOfMenu = lv_label_create(lv_scr_act());
+  lv_obj_align_to(labelEndOfMenu, btnClock, LV_ALIGN_OUT_RIGHT_MID, 0, 0);
+  lv_obj_set_style_text_color(labelEndOfMenu, lv_color_white(), LV_STATE_DEFAULT);
+  lv_label_set_text(labelEndOfMenu, " ]");
 
   /* Configure label temperature floor */
   labelFloor = lv_label_create(lv_scr_act());
@@ -524,12 +531,12 @@ void lv_termostato(void)
   lv_obj_set_style_text_color(labelTempImage, lv_color_white(), LV_STATE_DEFAULT);
   lv_label_set_text(labelTempImage, MY_SYMBOL_WIND);
 
-  /* Configure °C label */
+  /* Configure ï¿½C label */
   labelCelcius = lv_label_create(lv_scr_act());
   lv_obj_align_to(labelCelcius, labelSetValue, LV_ALIGN_OUT_RIGHT_TOP, 5, 0);
   lv_obj_set_style_text_font(labelCelcius, &lv_font_montserrat_12, LV_STATE_DEFAULT);
   lv_obj_set_style_text_color(labelCelcius, lv_color_white(), LV_STATE_DEFAULT);
-  lv_label_set_text(labelCelcius, " °C");
+  lv_label_set_text(labelCelcius, " ï¿½C");
 }
 
 /************************************************************************/
@@ -661,7 +668,7 @@ static void config_AFEC_pot(Afec *afec, uint32_t afec_id, uint32_t afec_channel,
   /* Configura trigger por software */
   afec_set_trigger(afec, AFEC_TRIG_SW);
 
-  /*** Configuracao específica do canal AFEC ***/
+  /*** Configuracao especï¿½fica do canal AFEC ***/
   struct afec_ch_config afec_ch_cfg;
   afec_ch_get_config_defaults(&afec_ch_cfg);
   afec_ch_cfg.gain = AFEC_GAINVALUE_0;
